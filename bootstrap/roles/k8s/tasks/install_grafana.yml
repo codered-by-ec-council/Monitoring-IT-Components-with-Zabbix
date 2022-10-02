@@ -1,0 +1,32 @@
+---
+- name: Add Grafana repository
+  community.kubernetes.helm_repository:
+    name: "grafana"
+    repo_url: "https://grafana.github.io/helm-charts"
+  become: False
+
+- name: Install Grafana
+  kubernetes.core.helm:
+    name: "grafana"
+    chart_ref: "grafana/grafana"
+    release_namespace: "grafana"
+    create_namespace: yes
+    wait: True
+    wait_timeout: "360s"
+    update_repo_cache: True
+    values:
+      service:
+        type: "NodePort"
+        nodePort: "30080"
+  become: False
+
+- name: Get Grafana Password
+  ansible.builtin.shell: "kubectl get secret --namespace grafana grafana -o jsonpath='{.data.admin-password}' | base64 -d"
+  register: grafanaPwd
+  become: False
+
+- name: Show Grafana Password
+  debug:
+    msg: "Grafana Password: {{ grafanaPwd.stdout }}"
+
+# ansible-galaxy collection install kubernetes.core

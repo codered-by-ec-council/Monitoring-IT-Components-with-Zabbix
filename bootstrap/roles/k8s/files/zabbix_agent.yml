@@ -1,0 +1,14 @@
+zabbixProxy:
+  enabled: false
+zabbixAgent:
+  service:
+    type: ClusterIP
+    port: 10050
+    targetPort: 10050
+    portName: zabbix-agent
+    listenOnAllInterfaces: true
+    annotations:
+      agent.zabbix/monitor: "true"
+  env:
+  - name: ZBX_SERVER_HOST
+    value: 192.168.60.21

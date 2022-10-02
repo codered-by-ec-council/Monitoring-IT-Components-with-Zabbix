@@ -1,0 +1,75 @@
+---
+- name: Zabbix agent installation
+  block:
+  - name: Download Agent Install File
+    win_get_url:
+      url: "{{ zabbix_win_agent_remote_url }}/{{ zabbix_win_agent_file_name }}"
+      dest: "{{ zabbix_win_agent_temp_dir }}/{{ zabbix_win_agent_file_name }}"
+
+  - name: Extract Agent Install File
+    community.windows.win_unzip:
+      src: "{{ zabbix_win_agent_temp_dir }}/{{ zabbix_win_agent_file_name }}"
+      dest: "{{ zabbix_win_agent_install_dir }}"
+      creates: "{{ zabbix_win_agent_install_dir }}"
+
+  - name: Create log directory
+    ansible.windows.win_file:
+      path: "{{ zabbix_win_agent_install_dir }}/logs"
+      state: directory
+
+  - name: Set log directory
+    community.windows.win_lineinfile:
+      path: "{{ zabbix_win_agent_install_dir }}/conf/zabbix_agentd.conf"
+      regex: '(^LogFile=)(.*)$'
+      line: 'LogFile={{ zabbix_win_agent_install_dir }}\logs\zabbix_agentd.log'
+    notify:
+    - Restart Windows zabbix-agent Service
+
+  - name: Set Server
+    community.windows.win_lineinfile:
+      path: "{{ zabbix_win_agent_install_dir }}/conf/zabbix_agentd.conf"
+      regex: '(^Server=)(.*)$'
+      line: 'Server={{ zabbix_proxy_ip }}'
+    notify:
+    - Restart Windows zabbix-agent Service
+
+  - name: Set ServerActive
+    community.windows.win_lineinfile:
+      path: "{{ zabbix_win_agent_install_dir }}/conf/zabbix_agentd.conf"
+      regex: '(^ServerActive=)(.*)$'
+      line: 'ServerActive={{ zabbix_proxy_ip }}'
+    notify:
+    - Restart Windows zabbix-agent Service
+
+  - name: Set Hostname
+    community.windows.win_lineinfile:
+      path: "{{ zabbix_win_agent_install_dir }}/conf/zabbix_agentd.conf"
+      regex: '(^Hostname=)(.*)$'
+      line: 'Hostname={{ node_prefix }}-{{ node_count }}'
+    notify:
+    - Restart Windows zabbix-agent Service
+
+  - name: Check if zabbix agent service exists
+    win_service:
+      name: "{{ zabbix_win_agent_service }}"
+    register: service_info
+  
+  - name: Install Windows zabbix-agent Service
+    ansible.windows.win_command: 
+      cmd: '"{{ zabbix_win_agent_install_dir }}/bin/{{ zabbix_win_agent_bin }}" --config "{{ zabbix_win_agent_install_dir }}/conf/zabbix_agentd.conf" --install'
+    when: service_info.exists == false
+
+  - name: Set Start mode of Zabbix Agent Service
+    ansible.windows.win_service:
+      name: "Zabbix Agent"
+      start_mode: "auto"
+
+  - name: Allow inbound connection to port 10050
+    community.windows.win_firewall_rule:
+      name: "Zabbix Agent"
+      localport: 10050
+      action: allow
+      direction: in
+      protocol: tcp
+      state: present
+      enabled: yes

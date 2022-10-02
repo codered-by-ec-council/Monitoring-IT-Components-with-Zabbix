@@ -1,0 +1,47 @@
+---
+- name: Create Host With Proxy
+  local_action:
+    module: community.zabbix.zabbix_host
+    server_url: "http://{{ zabbix_server_ip }}:{{ zabbix_server_port }}"
+    login_user: "{{ zabbix_server_user }}"
+    login_password: "{{ zabbix_server_pwd }}"
+    host_name: "{{ item.name }}"
+    host_groups: "{{ item.host_group }}"
+    link_templates: "{{ item.link_templates }}"
+    interfaces:
+    - type: "1"
+      main: 1
+      useip: 1
+      ip: "{{ item.ip }}"
+      port: "10050"
+    proxy: "{{ zabbix_proxy_name }}"
+    status: enabled
+    state: present
+  become: false
+  when: item.proxy == "yes"
+  with_items:
+  - "{{ zabbix_clients }}"
+
+- name: Create Host With NO Proxy
+  local_action:
+    module: community.zabbix.zabbix_host
+    server_url: "http://{{ zabbix_server_ip }}:{{ zabbix_server_port }}"
+    login_user: "{{ zabbix_server_user }}"
+    login_password: "{{ zabbix_server_pwd }}"
+    host_name: "{{ item.name }}"
+    host_groups: "{{ item.host_group }}"
+    link_templates: "{{ item.link_templates }}"
+    interfaces:
+    - type: "1"
+      main: 1
+      useip: 1
+      ip: "{{ item.ip }}"
+      port: "10050"
+    status: enabled
+    state: present
+  become: false
+  when: item.proxy == "no"
+  with_items:
+  - "{{ zabbix_clients }}"
+
+  # Requires "pip install zabbix-api and ansible-galaxy collection install community.zabbix"

@@ -1,0 +1,34 @@
+- name: Restart zabbix-server Service
+  ansible.builtin.service:
+    name: "zabbix-server"
+    state: restarted
+    
+- name: Restart zabbix-proxy Service
+  ansible.builtin.service:
+    name: "zabbix-proxy"
+    state: restarted
+
+- name: Restart zabbix-agent Service
+  ansible.builtin.service:
+    name: "zabbix-agent"
+    state: restarted
+
+- name: Restart nginx Service
+  ansible.builtin.service:
+    name: "nginx"
+    state: restarted
+
+- name: Restart php7.4-fpm Service
+  ansible.builtin.service:
+    name: "php7.4-fpm"
+    state: restarted
+
+- name: Restart nginx Service
+  ansible.builtin.service:
+    name: "nginx"
+    state: restarted
+
+- name: Restart Windows zabbix-agent Service
+  ansible.windows.win_service:
+    name: "{{ zabbix_win_agent_service }}"
+    state: "restarted"

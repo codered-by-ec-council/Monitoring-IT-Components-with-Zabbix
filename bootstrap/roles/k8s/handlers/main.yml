@@ -1,0 +1,10 @@
+- name: Restart kubelet service
+  ansible.builtin.service:
+    name: "kubelet"
+    daemon_reload: yes
+    state: restarted
+
+- name: Restart zabbix-agent Service
+  ansible.builtin.service:
+    name: "zabbix-agent"
+    state: restarted

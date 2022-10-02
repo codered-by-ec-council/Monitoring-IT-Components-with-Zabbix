@@ -1,0 +1,39 @@
+---
+- hosts: "{{ node_prefix }}-{{ node_count }}"
+  become: true
+  gather_facts: yes
+  tasks:
+  - name: Install Zabbix Repo
+    include_role:
+      name: zabbix
+      tasks_from: install_repo
+      
+  - name: Install Zabbix Agent
+    include_role:
+      name: zabbix
+      tasks_from: install_agent
+      
+  - name: Install Master Reqs
+    include_role:
+      name: k8s
+      tasks_from: install_prereqs
+  
+  - name: Install CRI
+    include_role:
+      name: k8s
+      tasks_from: install_cri
+  
+  - name: Install Kube Packages
+    include_role:
+      name: k8s
+      tasks_from: install_kube_packages
+  
+  - name: Master Join
+    include_role:
+      name: k8s
+      tasks_from: master_join
+
+  - name: Install Grafana
+    include_role:
+      name: k8s
+      tasks_from: install_grafana

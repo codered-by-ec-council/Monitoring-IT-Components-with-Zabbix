@@ -1,0 +1,38 @@
+---
+- hosts: "{{ node_prefix }}-{{ node_count }}"
+  become: true
+  gather_facts: no
+  collections:
+  - community.zabbix
+  tasks:
+  - name: Install Zabbix Repo
+    include_role:
+      name: zabbix
+      tasks_from: install_repo
+  
+  - name: Install Zabbix Server
+    include_role:
+      name: zabbix
+      tasks_from: install_server
+  
+  - name: Install Zabbix Agent
+    include_role:
+      name: zabbix
+      tasks_from: install_agent
+  
+  - name: Setup Clients
+    block:
+    - name: Create Proxies
+      include_role:
+        name: zabbix
+        tasks_from: create_proxies
+
+    - name: Create Hosts
+      include_role:
+        name: zabbix
+        tasks_from: create_hosts
+
+    - name: Delete Hosts
+      include_role:
+        name: zabbix
+        tasks_from: delete_hosts

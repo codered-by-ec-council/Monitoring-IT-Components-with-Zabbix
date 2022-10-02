@@ -1,0 +1,125 @@
+---
+- name: Install packages
+  block:
+  - name: Define packages
+    set_fact:
+      zabbix_packages:
+      - 'zabbix-server-mysql=1:6.0.9-1+ubuntu20.04'
+      - 'zabbix-frontend-php=1:6.0.9-1+ubuntu20.04'
+      - 'zabbix-nginx-conf=1:6.0.9-1+ubuntu20.04'
+      - 'zabbix-sql-scripts=1:6.0.9-1+ubuntu20.04'
+      - 'python3-pymysql=0.9.3-2ubuntu3'
+      - 'php7.4-mysql=7.4.3-4ubuntu2.13'
+      - 'mysql-server=8.0.30-0ubuntu0.20.04.2'
+
+  - name: Check if packages are installed
+    ansible.builtin.apt:
+      pkg: '{{ zabbix_packages }}'
+    check_mode: true
+    register: packages_check
+
+  - name: Install Zabbix Server
+    ansible.builtin.apt:
+      pkg: '{{ zabbix_packages }}'
+      update_cache: yes
+    when: packages_check.changed
+    notify:
+    - Restart zabbix-server Service
+
+  - name: Remove apache
+    ansible.builtin.apt:
+      pkg: 'apache2'
+      state: absent
+
+  - name: Enable and Start Services
+    ansible.builtin.service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    with_items:
+    - zabbix-server
+    - php7.4-fpm
+    - nginx 
+
+- name: Setup Zabbix DB
+  block:
+  - name: Create Zabbix initial DB
+    community.mysql.mysql_db:
+      name: zabbix
+      encoding: utf8mb4
+      collation: utf8mb4_bin
+      state: present
+      config_file: /etc/mysql/debian.cnf
+    register: zabbix_db
+
+  - name: Create Zabbix user
+    community.mysql.mysql_user:
+      name: "zabbix"
+      password: "{{ mysql_zabbix_pwd }}"
+      priv: 'zabbix.*:ALL,GRANT'
+      state: present
+      config_file: /etc/mysql/debian.cnf
+
+  - name: Schema DB
+    block:
+    - name: Enable log_bin_trust_function_creators
+      shell: mysql --defaults-file=/etc/mysql/debian.cnf -e 'set global log_bin_trust_function_creators = 1;'
+
+    - name: Import initial schema and data
+      shell: zcat /usr/share/zabbix-sql-scripts/mysql/server.sql.gz | mysql -uzabbix -p{{ mysql_zabbix_pwd }} zabbix
+
+    - name: Disable log_bin_trust_function_creators
+      shell: mysql --defaults-file=/etc/mysql/debian.cnf -e 'set global log_bin_trust_function_creators = 0;'
+    when: zabbix_db.changed
+
+  - name: Set Zabbix database password
+    ansible.builtin.lineinfile:
+      path: /etc/zabbix/zabbix_server.conf
+      regexp: '(^DBPassword=)(.*)$'
+      insertafter: '^# DBPassword= '
+      line: 'DBPassword={{ mysql_zabbix_pwd }}'
+
+- name: Frontend
+  block:
+  - name: Configure listen port
+    ansible.builtin.replace:
+      path: /etc/zabbix/nginx.conf
+      regexp: '#        listen          8080;'
+      replace: '        listen          8080;'
+    notify:
+    - Restart nginx Service
+
+  - name: Configure server_name
+    ansible.builtin.replace:
+      path: /etc/zabbix/nginx.conf
+      regexp: '#        server_name     example.com;'
+      replace: '        server_name     {{ node_prefix }}-{{ node_count }};'
+    notify:
+    - Restart nginx Service
+  
+  - name: Configure timezone
+    ansible.builtin.lineinfile:
+      path: /etc/php/7.4/fpm/pool.d/zabbix-php-fpm.conf
+      line: 'php_value[date.timezone] = UTC'
+    notify:
+    - Restart php7.4-fpm Service
+
+  - name: Copy template file
+    ansible.builtin.copy:
+      src: files/zabbix.conf.php 
+      dest: /etc/zabbix/web/zabbix.conf.php
+      owner: www-data
+      group: www-data
+      mode: '0600'
+  
+  - name: Restart Services
+    ansible.builtin.service:
+      name: "{{ item }}"
+      state: restarted
+      enabled: yes
+    with_items:
+    - zabbix-server
+    - php7.4-fpm
+    - nginx 
+
+# Ref: https://www.zabbix.com/download?zabbix=6.2&os_distribution=ubuntu&os_version=20.04_focal&db=mysql&ws=nginx

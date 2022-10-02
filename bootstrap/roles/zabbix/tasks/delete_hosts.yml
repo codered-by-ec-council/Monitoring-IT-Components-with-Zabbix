@@ -1,0 +1,10 @@
+---
+- name: Delete Hosts With
+  local_action:
+    module: community.zabbix.zabbix_host
+    server_url: "http://{{ zabbix_server_ip }}:{{ zabbix_server_port }}"
+    login_user: "{{ zabbix_server_user }}"
+    login_password: "{{ zabbix_server_pwd }}"
+    host_name: "Zabbix server"
+    state: absent
+  become: false

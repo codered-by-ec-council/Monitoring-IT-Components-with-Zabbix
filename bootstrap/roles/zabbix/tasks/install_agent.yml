@@ -1,0 +1,72 @@
+---
+- name: Define packages
+  set_fact:
+    zabbix_agent_pkgs:
+    - 'zabbix-agent=1:6.0.9-1+ubuntu20.04'
+
+- name: Check Package Install State
+  ansible.builtin.apt:
+    pkg: '{{ zabbix_agent_pkgs }}'
+  check_mode: true
+  register: zabbix_agent_install_status
+
+- name: Install Zabbix Agent
+  block:
+  - name: Install Zabbix Agent Package
+    ansible.builtin.apt:
+      pkg: '{{ zabbix_agent_pkgs }}'
+      update_cache: yes
+  
+  - name: Enable and Start zabbix-agent Service
+    ansible.builtin.service:
+      name: "zabbix-agent"
+      state: started
+      enabled: yes
+
+  - name: Set Zabbix Agent hostname
+    ansible.builtin.replace:
+      path: /etc/zabbix/zabbix_agentd.conf
+      regexp: '(^Hostname=)(.*)$'
+      replace: 'Hostname={{ node_prefix }}-{{ node_count }}'
+    notify:
+    - Restart zabbix-agent Service
+  
+  - name: Set Zabbix server connection for clients
+    block:
+    - name: Set Zabbix server IP
+      ansible.builtin.replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '(^Server=)(.*)$'
+        replace: 'Server={{ zabbix_proxy_ip }}'
+      notify:
+      - Restart zabbix-agent Service
+  
+    - name: Set Zabbix server Active IP
+      ansible.builtin.replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '(^ServerActive=)(.*)$'
+        replace: 'ServerActive={{ zabbix_proxy_ip }}'
+      notify:
+      - Restart zabbix-agent Service
+    when: >
+      node_prefix == "client-linux" and node_count == "1" or
+      node_prefix == "k8s" and node_count == "1"
+  
+  - name: Set Zabbix server connection for proxy
+    block:
+    - name: Set Zabbix server IP
+      ansible.builtin.replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '(^Server=)(.*)$'
+        replace: 'Server=127.0.0.1,{{ zabbix_proxy_ip }}'
+      notify:
+      - Restart zabbix-agent Service
+  
+    - name: Set Zabbix server Active IP
+      ansible.builtin.replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '(^ServerActive=)(.*)$'
+        replace: 'ServerActive=127.0.0.1,{{ zabbix_proxy_ip }}'
+      notify:
+      - Restart zabbix-agent Service
+    when: node_prefix == "zabbix-proxy" and node_count == "1"

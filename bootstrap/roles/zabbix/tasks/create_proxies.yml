@@ -1,0 +1,11 @@
+---
+- name: Create a Proxy
+  local_action:
+    module: community.zabbix.zabbix_proxy
+    server_url: "http://{{ zabbix_server_ip }}:{{ zabbix_server_port }}"
+    login_user: "{{ zabbix_server_user }}"
+    login_password: "{{ zabbix_server_pwd }}"
+    proxy_name: "{{ zabbix_proxy_name }}"
+    status: active
+    state: present
+  become: false

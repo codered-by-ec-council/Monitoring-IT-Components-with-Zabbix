@@ -1,0 +1,17 @@
+---
+- hosts: "{{ node_prefix }}-{{ node_count }}"
+  become: true
+  gather_facts: no
+  tasks:
+  - name: Zabbix Client
+    block:
+    - name: Install Zabbix Repo
+      include_role:
+        name: zabbix
+        tasks_from: install_repo
+
+    - name: Install Zabbix Agent
+      include_role:
+        name: zabbix
+        tasks_from: install_agent
+    when: node_count == "1"

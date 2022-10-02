@@ -1,0 +1,33 @@
+---
+- name: Install Prereq packages for a Master node
+  ansible.builtin.apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gnupg-agent
+    - software-properties-common
+  
+- name: Install Helm
+  block:
+  - name: Download helm
+    ansible.builtin.get_url:
+      url: "{{ helm_package }}"
+      dest: /tmp/helm.tar.gz
+      
+  - name: Extract helm tar file
+    ansible.builtin.unarchive:
+      src: /tmp/helm.tar.gz
+      dest: /tmp
+      remote_src: yes
+
+  - name: Copy helm binary
+    ansible.builtin.copy:
+      src: /tmp/linux-amd64/helm
+      dest: /usr/local/bin/helm
+      mode: '0755'
+      remote_src: yes

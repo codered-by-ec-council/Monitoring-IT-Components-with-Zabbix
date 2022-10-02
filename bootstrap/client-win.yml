@@ -1,0 +1,17 @@
+---
+- hosts: "{{ node_prefix }}-{{ node_count }}"
+  gather_facts: no
+  vars:
+    ansible_user: vagrant
+    ansible_password: vagrant
+    ansible_port: 5985
+    ansible_connection: winrm
+    ansible_winrm_transport: basic
+    ansible_winrm_server_cert_validation: ignore
+  tasks:
+  - name: Windows Client
+    block:
+    - name: Install Zabbix Agent
+      include_role:
+        name: zabbix
+        tasks_from: install_win_agent

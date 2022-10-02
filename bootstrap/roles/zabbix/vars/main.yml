@@ -1,0 +1,29 @@
+# Zabbix Server variables
+zabbix_server_user: "Admin"
+zabbix_server_pwd: "zabbix"
+zabbix_server_port: "8080"
+
+# Zabbix Proxy variables
+zabbix_proxy_name: "zabbix-proxy-1"
+
+# Zabbix Server and Proxy database variables
+mysql_dbpass: "zabbix"
+mysql_zabbix_pwd: "zabbix"
+proxy_dbname: "zabbix_proxy"
+proxy_dbpwd: "zabbix"
+
+# Zabbix Windows Agent variables
+zabbix_win_agent_file_name: "zabbix_agent-6.0.9-windows-amd64.zip" 
+zabbix_win_agent_remote_url: "https://cdn.zabbix.com/zabbix/binaries/stable/6.0/6.0.9" 
+zabbix_win_agent_temp_dir: "c:/tmp"
+zabbix_win_agent_install_dir: 'c:\Program Files\zabbix'
+zabbix_win_agent_bin: "zabbix_agentd.exe"
+zabbix_win_agent_service: "Zabbix Agent"
+
+# Zabbix hosts
+zabbix_clients:
+  - { name: "zabbix-server-1", proxy: "no", ip: "127.0.0.1", host_group: "Zabbix servers", link_templates: "[ 'Linux by Zabbix agent', 'Zabbix server health' ]" }
+  - { name: "zabbix-proxy-1", proxy: "yes", ip: "192.168.60.21", host_group: "Zabbix servers", link_templates: "[ 'Linux by Zabbix agent', 'Zabbix proxy health' ]" }
+  - { name: "client-linux-1", proxy: "yes", ip: "192.168.60.31", host_group: "Linux servers", link_templates: "[ 'Linux by Zabbix agent' ]" }
+  - { name: "client-win-1", proxy: "yes", ip: "192.168.60.41", host_group: "Templates/Operating systems", link_templates: "[ 'Windows by Zabbix agent' ]" }
+  - { name: "k8s-1", proxy: "yes", ip: "192.168.60.51", host_group: "Linux servers", link_templates: "[ 'Linux by Zabbix agent' ]" }

@@ -1,0 +1,96 @@
+---
+- name: Install packages
+  block:
+  - name: Define packages
+    set_fact:
+      zabbix_packages:
+      - 'zabbix-proxy-mysql=1:6.0.9-1+ubuntu20.04'
+      - 'zabbix-sql-scripts=1:6.0.9-1+ubuntu20.04'
+      - 'python3-pymysql=0.9.3-2ubuntu3'
+      - 'php7.4-mysql=7.4.3-4ubuntu2.13'
+      - 'mysql-server=8.0.30-0ubuntu0.20.04.2'
+
+  - name: Check if packages are installed
+    ansible.builtin.apt:
+      pkg: '{{ zabbix_packages }}'
+    check_mode: true
+    register: packages_check
+
+  - name: Install Zabbix Proxy
+    ansible.builtin.apt:
+      pkg: '{{ zabbix_packages }}'
+      update_cache: yes
+    when: packages_check.changed
+    notify:
+    - Restart zabbix-proxy Service
+
+  - name: Enable and Start zabbix-proxy Service
+    ansible.builtin.service:
+      name: "zabbix-proxy"
+      state: started
+      enabled: yes
+
+- name: Setup Zabbix DB
+  block:
+  - name: Create Zabbix initial DB
+    community.mysql.mysql_db:
+      name: "{{ proxy_dbname }}"
+      encoding: utf8mb4
+      collation: utf8mb4_bin
+      state: present
+      config_file: /etc/mysql/debian.cnf
+    register: zabbix_db
+
+  - name: Create Zabbix user
+    community.mysql.mysql_user:
+      name: "zabbix"
+      password: "{{ proxy_dbpwd }}"
+      priv: 'zabbix_proxy.*:ALL,GRANT'
+      state: present
+      config_file: /etc/mysql/debian.cnf
+
+  - name: Schema DB
+    block:
+    - name: Enable log_bin_trust_function_creators
+      shell: mysql --defaults-file=/etc/mysql/debian.cnf -e 'set global log_bin_trust_function_creators = 1;'
+
+    - name: Import initial schema and data
+      shell: cat /usr/share/zabbix-sql-scripts/mysql/proxy.sql | mysql -uzabbix -p{{ mysql_zabbix_pwd }} {{ proxy_dbname }}
+
+    - name: Disable log_bin_trust_function_creators
+      shell: mysql --defaults-file=/etc/mysql/debian.cnf -e 'set global log_bin_trust_function_creators = 0;'
+    when: zabbix_db.changed
+
+  - name: Setup Zabbix Proxy
+    block:
+    - name: Set Zabbix Server
+      ansible.builtin.replace:
+        path: /etc/zabbix/zabbix_proxy.conf
+        regexp: '(^Server=)(.*)$'
+        replace: 'Server={{ zabbix_server_ip }}'
+      notify:
+      - Restart zabbix-proxy Service
+
+    - name: Set Zabbix Proxy DBName
+      ansible.builtin.replace:
+        path: /etc/zabbix/zabbix_proxy.conf
+        regexp: '(^DBName=)(.*)$'
+        replace: 'DBName={{ proxy_dbname }}'
+      notify:
+      - Restart zabbix-proxy Service
+
+    - name: Set Zabbix Proxy DBPassword
+      ansible.builtin.replace:
+        path: /etc/zabbix/zabbix_proxy.conf
+        regexp: '(^# DBPassword=)(.*)$'
+        replace: 'DBPassword={{ proxy_dbpwd }}'
+      notify:
+      - Restart zabbix-proxy Service
+
+    - name: Set Zabbix Proxy Hostname
+      ansible.builtin.replace:
+        path: /etc/zabbix/zabbix_proxy.conf
+        regexp: '(^Hostname=)(.*)$'
+        replace: 'Hostname={{ node_prefix }}-{{ node_count }}'
+      notify:
+      - Restart zabbix-proxy Service
