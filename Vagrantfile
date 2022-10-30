@@ -35,7 +35,7 @@ ZABBIX_CLIENT_LINUX_RANGE      = 30
 
 # Zabbix Windows Client variables
 ZABBIX_CLIENT_WIN_NODES      = 1
-ZABBIX_CLIENT_WIN_CPU        = "1"
+ZABBIX_CLIENT_WIN_CPU        = "4"
 ZABBIX_CLIENT_WIN_MEMORY     = "384"
 ZABBIX_CLIENT_WIN_IMAGE_NAME = "jborean93/WindowsServer2019"
 ZABBIX_CLIENT_WIN_PREFIX     = "client-win"

@@ -83,13 +83,45 @@ $ vagrant up --no-parallel
 # Reach lab environment components
 
 ## SSH Linux VMs
-In order to the Linux VMs, you can do it via `ssh`, just running the command `vagrant ssh [name of vm]`, according example:
+In order to reach Linux VMs, you can do it via `ssh`, just running the command `vagrant ssh [name of vm]`, according example:
 
 ```
 $ vagrant ssh k8s-1
 Last login: Sun Oct  2 17:46:58 2022 from 192.168.121.1
 vagrant@k8s-1:~$ 
 ```
+
+## Reach Windows VMs
+In order to reach Windows VMs, you can do it via `ssh` or via `rdp`, the credentials are:
+
+- User: `vagrant`
+- Password: `vagrant`
+
+
+### Windows VMs via `SSH`
+
+```
+$ vagrant ssh client-win-1
+vagrant@192.168.121.148's password: 
+
+Microsoft Windows [Version 10.0.17763.2928] 
+(c) 2018 Microsoft Corporation. All rights reserved. 
+
+vagrant@CLIENT-WIN-1 C:\Users\vagrant>
+
+```
+***During the process, provide the password `vagrant`, and then connection will be established.***
+
+### Windows VMs via `RDP`
+
+First of all, you need to select the RDP client of your preference, but the process is similar, in this example I am using [Remmina](https://remmina.org/) to establish a [RDP](https://learn.microsoft.com/en-us/troubleshoot/windows-server/remote/understanding-remote-desktop-protocol) connection to the VM `client-win-1`.
+
+Complete the fields:
+- Server: `192.168.60.41`
+- User: `vagrant`
+- Password: `vagrant`
+
+![Remmina](images/Remmina.png)
 
 ## Reach Zabbix Server Web UI
 
